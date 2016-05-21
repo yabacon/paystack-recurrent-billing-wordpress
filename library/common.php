@@ -8,15 +8,16 @@ if(!defined('ABSPATH')){
 require(__DIR__ . '/Paystack.php');
 global $wpdb;
 
-define('PAYSTACK_SUBSCRIBE_PAY_TABLE', $wpdb->prefix . "paystack_subscribe_pay");
-define('PAYSTACK_SUBSCRIBE_PAY_DB_VERSION', "1.1");
+define('PAYSTACK_RECURRENT_BILLING_TABLE', $wpdb->prefix . "paystack_recurrent_billing");
+define('PAYSTACK_RECURRENT_BILLING_CODES_TABLE', $wpdb->prefix . "paystack_recurrent_billing_codes");
+define('PAYSTACK_RECURRENT_BILLING_DB_VERSION', "0.5");
 
-function paystack_subscribe_pay_verify_short_code($atts)
+function paystack_recurrent_billing_verify_short_code($atts)
 {
     $toret = new stdClass();
     
     $toret->buttontext = (is_array($atts) && array_key_exists('buttontext', $atts)) ? $atts['buttontext'] : "Subscribe";
-    $toret->target = (is_array($atts) && array_key_exists('target', $atts)) ? $atts['target'] : 0;
+    $toret->target = (is_array($atts) && array_key_exists('target', $atts)) ? $atts['target'] : null;
     $toret->plancode = (is_array($atts) && array_key_exists('plancode', $atts)) ? $atts['plancode'] : false;
     $toret->message = (is_array($atts) && array_key_exists('message', $atts)) ? $atts['message'] : false;
 
@@ -33,27 +34,27 @@ function paystack_subscribe_pay_verify_short_code($atts)
     return $toret;
 }
 
-function paystack_subscribe_pay_get_public_key()
+function paystack_recurrent_billing_get_public_key()
 {
-    $options = get_option( 'paystack_subscribe_pay_settings', array('paystack_subscribe_pay_public_key'=>""));
-    return $options['paystack_subscribe_pay_public_key'];
+    $options = get_option( 'paystack_recurrent_billing_settings', array('paystack_recurrent_billing_public_key'=>""));
+    return $options['paystack_recurrent_billing_public_key'];
 }
 
-function paystack_subscribe_pay_get_alert_emails()
+function paystack_recurrent_billing_get_alert_emails()
 {
-    $options = get_option( 'paystack_subscribe_pay_settings', array('paystack_subscribe_pay_alert_emails'=>""));
-    return $options['paystack_subscribe_pay_alert_emails'];
+    $options = get_option( 'paystack_recurrent_billing_settings', array('paystack_recurrent_billing_alert_emails'=>""));
+    return $options['paystack_recurrent_billing_alert_emails'];
 }
 
-function paystack_subscribe_pay_get_secret_key()
+function paystack_recurrent_billing_get_secret_key()
 {
-    $options = get_option( 'paystack_subscribe_pay_settings', array('paystack_subscribe_pay_secret_key'=>""));
-    return $options['paystack_subscribe_pay_secret_key'];
+    $options = get_option( 'paystack_recurrent_billing_settings', array('paystack_recurrent_billing_secret_key'=>""));
+    return $options['paystack_recurrent_billing_secret_key'];
 }
 
-function paystack_subscribe_pay_form($atts)
+function paystack_recurrent_billing_form($atts)
 {
-    $att = paystack_subscribe_pay_verify_short_code($atts);
+    $att = paystack_recurrent_billing_verify_short_code($atts);
 
     if($att->error){
         return $att->error;
@@ -301,10 +302,11 @@ $bs.remove();
 
         var sendthis = {
             subscriber: subscriber,
-            cost: '.$att->target.'
+            target: '.$att->target.',
+            message: \''.addslashes($att->message).'\'
         };
         paystackHandler = PaystackPop.setup({
-          key: \''.paystack_subscribe_pay_get_public_key().'\',
+          key: \''.paystack_recurrent_billing_get_public_key().'\',
           email: subscriber.email,
           first_name: subscriber.firstname,
           last_name: subscriber.lastname,
@@ -321,7 +323,7 @@ $bs.remove();
             var callbackurl = \''.
                 plugins_url( 'links/callback.php', __DIR__ ) .
                 '?\' + serialize(sendthis);
-            $.get(  ).fail(function() {
+            $.get( callbackurl ).fail(function() {
                 // redirect if AJAX fails
                 $("#success-message").removeClass(\'hidden\').
                     find(\'#trans-ref\').text(response.trxref+ \'. Please wait while you are redirected... \');
@@ -342,87 +344,87 @@ $bs.remove();
     return $form;
 }
 
-function paystack_subscribe_pay_action_links($links) {
+function paystack_recurrent_billing_action_links($links) {
   /* Add link to settings page under woo-commerce */
-  $links[] = '<a href="' . esc_url(get_admin_url(null, 'options-general.php?page=paystack_subscribe_pay')) . '">Settings</a>';
+  $links[] = '<a href="' . esc_url(get_admin_url(null, 'options-general.php?page=paystack_recurrent_billing')) . '">Settings</a>';
   /* Add link to settings page on paystack dashboard */
   $links[] = '<a target="_blank" href="https://dashboard.paystack.co/#/settings/developer" target="_blank">Paystack Dashboard</a>';
   return $links;
 }
 
-function paystack_subscribe_pay_start_session() {
+function paystack_recurrent_billing_start_session() {
     if(!session_id()) {
         session_start();
     }
 }
 
-function paystack_subscribe_pay_add_admin_menu()
+function paystack_recurrent_billing_add_admin_menu()
 {
 
-    add_options_page('Paystack Subscribe Pay', 'Paystack Subscribe Pay', 'manage_options', 'paystack_subscribe_pay', 'paystack_subscribe_pay_options_page');
+    add_options_page('Paystack Recurrent Billing', 'Paystack Recurrent Billing', 'manage_options', 'paystack_recurrent_billing', 'paystack_recurrent_billing_options_page');
 
 }
 
 
-function paystack_subscribe_pay_settings_init()
+function paystack_recurrent_billing_settings_init()
 {
 
-    register_setting('paystack_subscribe_pay_pluginPage', 'paystack_subscribe_pay_settings');
+    register_setting('paystack_recurrent_billing_pluginPage', 'paystack_recurrent_billing_settings');
 
     add_settings_section(
-        'paystack_subscribe_pay_pluginPage_section',
-        __('', 'paystack_subscribe_pay'),
-        'paystack_subscribe_pay_settings_section_callback',
-        'paystack_subscribe_pay_pluginPage'
+        'paystack_recurrent_billing_pluginPage_section',
+        __('', 'paystack_recurrent_billing'),
+        'paystack_recurrent_billing_settings_section_callback',
+        'paystack_recurrent_billing_pluginPage'
     );
 
     add_settings_field(
-        'paystack_subscribe_pay_alert_emails',
-        __('Enter (an) email(s) to be alerted for every event separated by a comma', 'paystack_subscribe_pay'),
-        'paystack_subscribe_pay_alert_emails_render',
-        'paystack_subscribe_pay_pluginPage',
-        'paystack_subscribe_pay_pluginPage_section'
+        'paystack_recurrent_billing_alert_emails',
+        __('Enter (an) email(s) to be alerted for every event separated by a comma', 'paystack_recurrent_billing'),
+        'paystack_recurrent_billing_alert_emails_render',
+        'paystack_recurrent_billing_pluginPage',
+        'paystack_recurrent_billing_pluginPage_section'
     );
 
     add_settings_field(
-        'paystack_subscribe_pay_secret_key',
-        __('Enter your paystack secret key', 'paystack_subscribe_pay'),
-        'paystack_subscribe_pay_secret_key_render',
-        'paystack_subscribe_pay_pluginPage',
-        'paystack_subscribe_pay_pluginPage_section'
+        'paystack_recurrent_billing_secret_key',
+        __('Enter your paystack secret key', 'paystack_recurrent_billing'),
+        'paystack_recurrent_billing_secret_key_render',
+        'paystack_recurrent_billing_pluginPage',
+        'paystack_recurrent_billing_pluginPage_section'
     );
 
     add_settings_field(
-        'paystack_subscribe_pay_public_key',
-        __('Enter your paystack public key', 'paystack_subscribe_pay'),
-        'paystack_subscribe_pay_public_key_render',
-        'paystack_subscribe_pay_pluginPage',
-        'paystack_subscribe_pay_pluginPage_section'
+        'paystack_recurrent_billing_public_key',
+        __('Enter your paystack public key', 'paystack_recurrent_billing'),
+        'paystack_recurrent_billing_public_key_render',
+        'paystack_recurrent_billing_pluginPage',
+        'paystack_recurrent_billing_pluginPage_section'
     );
 
 
 }
 
-function paystack_subscribe_pay_public_key_render()
+function paystack_recurrent_billing_public_key_render()
 {
 
-    $options = get_option('paystack_subscribe_pay_settings');
+    $options = get_option('paystack_recurrent_billing_settings');
     ?>
-    <input type='text' name='paystack_subscribe_pay_settings[paystack_subscribe_pay_public_key]' 
-    value='<?php echo $options['paystack_subscribe_pay_public_key']; ?>' size="50">
+    <input type='text' name='paystack_recurrent_billing_settings[paystack_recurrent_billing_public_key]' 
+    value='<?php echo $options['paystack_recurrent_billing_public_key']; ?>' size="50">
     <br><i>Obtain from: <a target="_blank" href="https://dashboard.paystack.co/#/settings/developer" 
     target="_blank">Paystack Dashboard</a></i>
     <?php
 
 }
 
-function paystack_subscribe_pay_secret_key_render()
+function paystack_recurrent_billing_secret_key_render()
 {
 
-    $options = get_option('paystack_subscribe_pay_settings');
+    $options = get_option('paystack_recurrent_billing_settings');
     ?>
-    <input type='text' name='paystack_subscribe_pay_settings[paystack_subscribe_pay_secret_key]' 
-    value='<?php echo $options['paystack_subscribe_pay_secret_key']; ?>' size="50">
+    <input type='text' name='paystack_recurrent_billing_settings[paystack_recurrent_billing_secret_key]' 
+    value='<?php echo $options['paystack_recurrent_billing_secret_key']; ?>' size="50">
     <br><i>Obtain from: <a target="_blank" href="https://dashboard.paystack.co/#/settings/developer" 
     target="_blank">Paystack Dashboard</a></i>
     <?php
@@ -430,20 +432,20 @@ function paystack_subscribe_pay_secret_key_render()
 }
 
 
-function paystack_subscribe_pay_alert_emails_render()
+function paystack_recurrent_billing_alert_emails_render()
 {
 
-    $options = get_option('paystack_subscribe_pay_settings');
+    $options = get_option('paystack_recurrent_billing_settings');
     ?>
-    <input type='text' name='paystack_subscribe_pay_settings[paystack_subscribe_pay_alert_emails]' 
-    value='<?php echo $options['paystack_subscribe_pay_alert_emails']; ?>' size="50">
+    <input type='text' name='paystack_recurrent_billing_settings[paystack_recurrent_billing_alert_emails]' 
+    value='<?php echo $options['paystack_recurrent_billing_alert_emails']; ?>' size="50">
     <br><i>Be sure to enter valid emails separated by a comma</i>
     <?php
 
 }
 
 
-function paystack_subscribe_pay_settings_section_callback()
+function paystack_recurrent_billing_settings_section_callback()
 {
 
     echo __('
@@ -461,7 +463,7 @@ function paystack_subscribe_pay_settings_section_callback()
     href="https://dashboard.paystack.co/#/settings/developer" target="_blank">Paystack
     Dashboard</a> to: <pre>'.plugins_url( 'links/webhook.php', __DIR__ ).'</pre></li>
     <li>Configure the plugin by filling the Alert Emails, Paystack Secret Key and Paystack Public Key fields below.</li>
-    <li>Include the shortcode: <b>[paystacksubscribepay 
+    <li>Include the shortcode: <b>[paystackrecurrentbilling 
     target="<i>NGN_AMT</i>" message="<i>MESSAGE</i>" plancode="<i>PLAN_CODE</i>"]</b> 
     in the page where you want the subscription form displayed.
     <p style="text-align:justify">Replace <i>PLAN_CODE</i> with the code for the plan you have created
@@ -472,8 +474,8 @@ function paystack_subscribe_pay_settings_section_callback()
     Note that the cost is optional and the subscription will continue indefinitely if not provided.
     <p style="text-align:justify">Replace <i>MESSAGE</i> with the message you want to display to your visitor after a successful subscription 
     Note that the message is optional and a default of <b>You will also get a confirmation message in the mail.</b> will be displayed.
-    <p>e.g. <b>[paystacksubscribepay target="10000" message="Thanks for subscribing!" plancode="PLN_xxx"]</b>', 
-    'paystack_subscribe_pay</p></li>
+    <p>e.g. <b>[paystackrecurrentbilling target="10000" message="Thanks for subscribing!" plancode="PLN_xxx"]</b>', 
+    'paystack_recurrent_billing</p></li>
     </ol>
             </div>
         </div>
@@ -486,17 +488,17 @@ function paystack_subscribe_pay_settings_section_callback()
 }
 
 
-function paystack_subscribe_pay_options_page()
+function paystack_recurrent_billing_options_page()
 {
 
     ?>
     <form action='options.php' method='post'>
         
-        <h2>Paystack Subscribe Pay</h2>
+        <h2>Paystack Recurrent Billing</h2>
         
         <?php
-        settings_fields('paystack_subscribe_pay_pluginPage');
-        do_settings_sections('paystack_subscribe_pay_pluginPage');
+        settings_fields('paystack_recurrent_billing_pluginPage');
+        do_settings_sections('paystack_recurrent_billing_pluginPage');
         submit_button();
         ?>
         
@@ -505,13 +507,13 @@ function paystack_subscribe_pay_options_page()
 
 }
 
-function paystack_subscribe_pay_install () {
+function paystack_recurrent_billing_install () {
 
-    $installed_ver = get_option( "paystack_subscribe_pay_db_version" );
+    $installed_ver = get_option( "paystack_recurrent_billing_db_version" );
 
-    if ( $installed_ver != PAYSTACK_SUBSCRIBE_PAY_DB_VERSION ) {
+    if ( $installed_ver != PAYSTACK_RECURRENT_BILLING_DB_VERSION ) {
 
-        $sql = "CREATE TABLE `".PAYSTACK_SUBSCRIBE_PAY_TABLE."` (
+        $sql = "CREATE TABLE `".PAYSTACK_RECURRENT_BILLING_TABLE."` (
           `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
           `firstname` varchar(200) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
           `lastname` varchar(200) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
@@ -525,16 +527,27 @@ function paystack_subscribe_pay_install () {
           `internalnotes` text COLLATE utf8_unicode_ci,
           `ip` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
           PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;";
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+        
+        CREATE TABLE `".PAYSTACK_RECURRENT_BILLING_CODES_TABLE."` (
+          `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+          `subscriptioncode` varchar(100) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+          `customercode` varchar(100) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+          `plancode` varchar(100) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+          `used` TINYINT(1) NOT NULL DEFAULT 0,
+          `whensubscribed` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+        ";
 
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
         dbDelta( $sql );
 
-        update_option( "paystack_subscribe_pay_db_version", PAYSTACK_SUBSCRIBE_PAY_DB_VERSION );
+        update_option( "paystack_recurrent_billing_db_version", PAYSTACK_RECURRENT_BILLING_DB_VERSION );
     }
 }
 
-function paystack_subscribe_pay_get_ip_address() {
+function paystack_recurrent_billing_get_ip_address() {
     foreach (array('HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_FORWARDED_FOR', 'HTTP_FORWARDED', 'REMOTE_ADDR') as $key) {
         if (array_key_exists($key, $_SERVER) === true) {
             foreach (explode(',', $_SERVER[$key]) as $ip) {
@@ -548,10 +561,8 @@ function paystack_subscribe_pay_get_ip_address() {
     }
 }
 
-function paystack_subscribe_pay_add_subscriber ($subscriber){
-    global $wpdb;
-    
-    $emails = explode(',' , paystack_subscribe_pay_get_alert_emails());
+function paystack_recurrent_billing_alert_them ($subject, $message){
+    $emails = explode(',' , paystack_recurrent_billing_get_alert_emails());
     $has_invalid_email = false;
     foreach($emails as $em){
         if(!filter_var($em, FILTER_VALIDATE_EMAIL)){
@@ -559,7 +570,13 @@ function paystack_subscribe_pay_add_subscriber ($subscriber){
         }
     }
     if(!$has_invalid_email){
-        mail(  paystack_subscribe_pay_get_alert_emails(), '[Paystack Subscribe Pay] A new subscriber!', 'Hi,
+        mail(  paystack_recurrent_billing_get_alert_emails(), '[Paystack Recurrent Billing] '.$subject, $message);
+    }
+}
+
+function paystack_recurrent_billing_add_subscriber ($subscriber){
+    global $wpdb;
+    paystack_recurrent_billing_alert_them('A new subscriber!','Hi,
 
 Just a heads up about a new subscriber to your plan: '.$subscriber->payments[0]->plan_name."
 
@@ -570,40 +587,31 @@ Delivery Address: {$subscriber->deliveryaddress}
 
 Thanks!
         " );
-    }
-    
     $wpdb->insert( 
-        PAYSTACK_SUBSCRIBE_PAY_TABLE, 
+        PAYSTACK_RECURRENT_BILLING_TABLE, 
         array( 
             'firstname' => $subscriber->firstname, 
             'lastname' => $subscriber->lastname, 
             'email' => $subscriber->email, 
             'phone' => $subscriber->phone, 
             'deliveryaddress' => $subscriber->deliveryaddress, 
+            'subscriptioncode' => $subscriber->subscriptioncode, 
             'debt' => $subscriber->debt, 
             'payments' => json_encode($subscriber->payments), 
-            'ip' => paystack_subscribe_pay_get_ip_address(), 
+            'ip' => paystack_recurrent_billing_get_ip_address(), 
         ) 
     );
 }
 
-function paystack_subscribe_pay_add_payment ($evt){
+function paystack_recurrent_billing_add_invoice_payment ($evt){
+    global $wpdb;
     // only add successful payments
-    if(strtolower($evt->status) != 'success'){
+    if(strtolower($evt->data->status) != 'success'){
         return;
     }
-    $is_event = $evt->invoice_code ? true : false;
-    // get subscriber by email
-    global $wpdb;
-    $subscriber = $wpdb->get_row( 
-        $wpdb->prepare(
-            'SELECT * FROM `'.PAYSTACK_SUBSCRIBE_PAY_TABLE.'` WHERE `email` = %s',
-            $evt->customer->email
-        ),
-        OBJECT
-    );
+
+    $subscriber = paystack_recurrent_billing_get_subscriber_by_code($evt);
     if(!$subscriber){
-        //subscriber not found
         return;
     }
 
@@ -615,21 +623,40 @@ function paystack_subscribe_pay_add_payment ($evt){
         //payments not found
         return;
     }
-    $tocomp = $is_event ? $evt->reference : $evt->transaction->reference;
+    $tocomp = $evt->data->transaction->reference;
     foreach($payments as $p){
         // if the payment had an invoice code, it was an event, else a transaction
-        if(($p->invoice_code ? ($p->transaction->reference == $tocomp) : ($p->reference == $tocomp) )){
+        if(($p->invoice_code ? ($p->data->transaction->reference == $tocomp) : ($p->data->reference == $tocomp) )){
             // trying to add same reference twice.
             return;
         }
     }
     $payments[] = $evt;
-    $subscriber->debt = $subscriber->debt - ($evt->amount/100);
+    $disableit = false;
+    $olddebt = $subscriber->debt;
+    $subscriber->debt = $subscriber->debt ? ($subscriber->debt - ($evt->data->amount/100)) : null;
+
+    if($olddebt && ($subscriber->debt<=0)){
+        // debt fulfilled
+        $paystack = new Paystack(paystack_recurrent_billing_get_secret_key());
+        $subscriptiondata = $paystack->subscription($evt->data->subscription->subscription_code);
+        // disable subscription at Paystack
+        $disabled = $paystack->subscription->disable(['code'=>$subscriptiondata->data->subscription_code, 'token'=>$subscriptiondata->data->email_token ]);
+        paystack_recurrent_billing_alert_them('A subscriber\'s payment has been completed!','Hi,
+
+Just a heads up about a subscriber to your plan: '.$subscriber->payments[0]->plan_name." who has completed their payment.
+
+Name: {$subscriber->firstname} {$subscriber->lastname}
+Email: {$subscriber->email}
+Delivery Address: {$subscriber->deliveryaddress}
+
+Thanks!" );
+    }
     $subscriber->payments = json_encode($payments);
-    
+
     // update subscriber info
     $wpdb->update( 
-        PAYSTACK_SUBSCRIBE_PAY_TABLE, 
+        PAYSTACK_RECURRENT_BILLING_TABLE, 
         array( 
             'payments' => $subscriber->payments,
             'debt' => $subscriber->debt
@@ -644,8 +671,139 @@ function paystack_subscribe_pay_add_payment ($evt){
     return true;
 }
 
-function paystack_subscribe_pay_update_db_check() {
-    if ( get_site_option( 'paystack_subscribe_pay_db_version' ) != PAYSTACK_SUBSCRIBE_PAY_DB_VERSION ) {
-        paystack_subscribe_pay_install();
+function paystack_recurrent_billing_get_subscription_code($plancode, $customercode){
+    global $wpdb;
+    $subscriptioncode = $wpdb->get_var( 
+        $wpdb->prepare(
+            'SELECT `subscriptioncode` FROM `'.PAYSTACK_RECURRENT_BILLING_CODES_TABLE.'` 
+            WHERE `plancode` = %s AND `customercode` = %s AND `used`=0',
+            $plancode, $customercode
+        )
+    );
+    // update subscriber info
+    $wpdb->update( 
+        PAYSTACK_RECURRENT_BILLING_CODES_TABLE, 
+        array( 
+            'used' => 1
+        ), 
+        array( 'subscriptioncode' => $subscriptioncode ), 
+        array( 
+            '%s'
+        ), 
+        array( '%s' ) 
+    );
+    return $subscriptioncode;
+}
+
+function paystack_recurrent_billing_get_subscriber_by_code ($evt){
+    // get subscriber by code
+    global $wpdb;
+    $subscriber = $wpdb->get_row( 
+        $wpdb->prepare(
+            'SELECT * FROM `'.PAYSTACK_RECURRENT_BILLING_TABLE.'` WHERE `subscriptioncode` = %s',
+            $evt->data->subscription->subscription_code
+        ),
+        OBJECT
+    );
+    if(!$subscriber){
+        //subscriber not found
+        paystack_recurrent_billing_alert_them('Subscriber Not found!','Hi,
+
+Just a heads up about a new subscriber to your plan: '.$evt->data->plan->name." was not found in the database.
+This was probably due to network connectivity issues.
+Here's their details so you may follow up:
+
+Name: {$evt->data->customer->first_name} {$evt->data->customer->first_name}
+Email: {$evt->data->customer->email}
+Phone: {$evt->data->customer->phone}
+
+Thanks!
+        " );
+        return;
+    }
+    return $subscriber;
+}
+
+function paystack_recurrent_billing_get_subscriber_by_email_no_code ($evt, $notify=false){
+    // get subscriber by email who has no subscription code
+    global $wpdb;
+    $subscriber = $wpdb->get_row( 
+        $wpdb->prepare(
+            'SELECT * FROM `'.PAYSTACK_RECURRENT_BILLING_TABLE.'` WHERE `email` = %s AND  and `subscription_code` IS NULL',
+            $evt->data->customer->email
+        ),
+        OBJECT
+    );
+    if(!$subscriber && $notify){
+        //subscriber not found
+        paystack_recurrent_billing_alert_them('Subscriber Not found!','Hi,
+
+Just a heads up about a new subscriber to your plan: '.$evt->data->plan->name." who was not found in the database.
+This was probably due to network connectivity issues.
+Here's their details so you may follow up:
+
+Name: {$evt->data->customer->first_name} {$evt->data->customer->first_name}
+Email: {$evt->data->customer->email}
+Phone: {$evt->data->customer->phone}
+
+Thanks!" );
+        return;
+    }
+    return $subscriber;
+}
+
+function paystack_recurrent_billing_check_debt_and_notify ($evt){
+    global $wpdb;
+    $subscriber = paystack_recurrent_billing_get_subscriber_by_code($evt);
+    if(!$subscriber){
+        return;
+    }
+
+    paystack_recurrent_billing_alert_them('A subscriber\'s subscription has been disabled!','Hi,
+
+Just a heads up about a subscriber to your plan: '.$subscriber->payments[0]->plan_name." 
+has disabled their subscription.
+
+Name: {$subscriber->firstname} {$subscriber->lastname}
+Email: {$subscriber->email}
+Delivery Address: {$subscriber->deliveryaddress}
+".($subscriber->debt ? "To Balance: {$subscriber->debt}" : "")."
+
+Thanks!" );
+}
+
+
+function paystack_recurrent_billing_update_subscription_code ($evt){
+    global $wpdb;
+    $wpdb->insert( 
+        PAYSTACK_RECURRENT_BILLING_CODES_TABLE, 
+        array( 
+            'plancode' => $evt->data->plan->plan_code, 
+            'customercode' => $evt->data->customer->customer_code, 
+            'subscriptioncode' => $evt->data->subscription_code
+        ) 
+    );
+
+    $subscriber = paystack_recurrent_billing_get_subscriber_by_email_no_code($evt);
+    if($subscriber){
+        // update subscriber info
+        $wpdb->update( 
+            PAYSTACK_RECURRENT_BILLING_TABLE, 
+            array( 
+                'subscriptioncode' => $evt->subscription_code
+            ), 
+            array( 'id' => $subscriber->id ), 
+            array( 
+                '%s'
+            ), 
+            array( '%d' ) 
+        );
+        return true;
+    }
+}
+
+function paystack_recurrent_billing_update_db_check() {
+    if ( get_site_option( 'paystack_recurrent_billing_db_version' ) != PAYSTACK_RECURRENT_BILLING_DB_VERSION ) {
+        paystack_recurrent_billing_install();
     }
 }

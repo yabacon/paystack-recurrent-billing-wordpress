@@ -12,7 +12,7 @@ if(!($getObj->trxref && $getObj->subscriber)){
 }
 
 // verify transaction
-$paystack = new Paystack(paystack_subscribe_pay_get_secret_key());
+$paystack = new Paystack(paystack_recurrent_billing_get_secret_key());
 $trx = $paystack->transaction->verify(['reference'=>$getObj->trxref]);
 if(!$trx->status){
     // only a successful API call is welcome
@@ -25,6 +25,7 @@ if(!(strtolower($tx->status) === 'success')){
 }
 
 $tx->plan_name = $paystack->plan($tx->plan)->data->name;
+$tx->customer_code = $paystack->customer->create(['email'=>$tx->customer->email])->data->customer_code;
 
 // add transaction details to subscriber object
 $subscriber = new stdClass();
@@ -33,9 +34,10 @@ $subscriber->lastname = $getObj->subscriber->lastname;
 $subscriber->email = $getObj->subscriber->email; 
 $subscriber->deliveryaddress = $getObj->subscriber->deliveryaddress; 
 $subscriber->phone = $getObj->subscriber->phone; 
-$subscriber->debt = $getObj->cost ? ($getObj->cost - ($tx->amount/100)) : null;
+$subscriber->debt = $getObj->target ? ($getObj->target - ($tx->amount/100)) : null;
 $subscriber->payments = [$tx];
+$subscriber->subscriptioncode = paystack_recurrent_billing_get_subscription_code($tx->plan, $tx->customer_code);
 
-paystack_subscribe_pay_add_subscriber($subscriber);
+paystack_recurrent_billing_add_subscriber($subscriber);
 
 echo "Subscription Successful.";
