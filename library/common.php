@@ -302,7 +302,7 @@ $bs.remove();
 
         var sendthis = {
             subscriber: subscriber,
-            target: '.$att->target.',
+            target: \''.$att->target.'\',
             message: \''.addslashes($att->message).'\'
         };
         paystackHandler = PaystackPop.setup({
