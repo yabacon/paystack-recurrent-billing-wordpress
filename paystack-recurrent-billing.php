@@ -1,13 +1,13 @@
 <?php
 /*
-  Plugin Name: Paystack Recurrent Billing Plugin
+  Plugin Name: Paystack Recurrent Billing
   Plugin URI: http://www.paystack.com
   Version: 1.0.0
   Author: Ibrahim Lawal
   Author URI: https://paystack.com/
   Description: Allows merchants include a Paystack Inline popup that allows subscription
-  to a plan created on their dashboard. Until a set amount is paid.
-  via shortcode on their website
+  to a plan created on their dashboard via shortcode on their website. The subscription is active
+  until an optional target is paid or the user/merchant cancels the subscription.
  */
 
 defined('ABSPATH') or die('<!-- Silence of the tigers-->');

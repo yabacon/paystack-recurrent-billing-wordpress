@@ -10,7 +10,7 @@ global $wpdb;
 
 define('PAYSTACK_RECURRENT_BILLING_TABLE', $wpdb->prefix . "paystack_recurrent_billing");
 define('PAYSTACK_RECURRENT_BILLING_CODES_TABLE', $wpdb->prefix . "paystack_recurrent_billing_codes");
-define('PAYSTACK_RECURRENT_BILLING_DB_VERSION', "0.5");
+define('PAYSTACK_RECURRENT_BILLING_DB_VERSION', "1.0");
 
 function paystack_recurrent_billing_verify_short_code($atts)
 {
