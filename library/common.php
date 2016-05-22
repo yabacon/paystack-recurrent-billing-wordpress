@@ -697,11 +697,12 @@ function paystack_recurrent_billing_get_subscription_code($plancode, $customerco
 
 function paystack_recurrent_billing_get_subscriber_by_code ($evt){
     // get subscriber by code
+    $subcode = $evt->data->subscription_code ? : $evt->data->subscription->subscription_code;
     global $wpdb;
     $subscriber = $wpdb->get_row( 
         $wpdb->prepare(
             'SELECT * FROM `'.PAYSTACK_RECURRENT_BILLING_TABLE.'` WHERE `subscriptioncode` = %s',
-            $evt->data->subscription->subscription_code
+            $subcode
         ),
         OBJECT
     );
