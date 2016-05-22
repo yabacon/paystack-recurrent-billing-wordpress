@@ -2,7 +2,7 @@
 /*
   Plugin Name: Paystack Recurrent Billing
   Plugin URI: http://www.paystack.com
-  Version: 1.0.0
+  Version: 1.0.1
   Author: Ibrahim Lawal
   Author URI: https://paystack.com/
   Description: Allows merchants include a Paystack Inline popup that allows subscription
