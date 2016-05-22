@@ -7,7 +7,7 @@
   Author URI: https://paystack.com/
   Description: Allows merchants include a Paystack Inline popup that allows subscription
   to a plan created on their dashboard via shortcode on their website. The subscription is active
-  until an optional target is paid or the user/merchant cancels the subscription.
+  until an optional target is paid or - if no target is set - the user/merchant cancels the subscription.
  */
 
 defined('ABSPATH') or die('<!-- Silence of the tigers-->');
