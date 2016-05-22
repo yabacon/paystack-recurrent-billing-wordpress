@@ -763,7 +763,7 @@ function paystack_recurrent_billing_check_debt_and_notify ($evt){
     paystack_recurrent_billing_alert_them('A subscriber\'s subscription has been disabled!','Hi,
 
 Just a heads up about a subscriber to your plan: '.$subscriber->payments[0]->plan_name." 
-has disabled their subscription.
+who has disabled their subscription.
 
 Name: {$subscriber->firstname} {$subscriber->lastname}
 Email: {$subscriber->email}
