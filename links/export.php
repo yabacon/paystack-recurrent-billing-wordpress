@@ -9,7 +9,7 @@ $subscribers = paystack_recurrent_billing_get_all_subscribers();
 
 if($format==='json'){
     header('Content-Type: application/json');
-    header('Content-disposition: filename="subscribers.json"');
+    header('Content-disposition: attachment; filename="subscribers.json"');
     foreach($subscribers as $s){
         $s->payments = json_decode($s->payments);
     }
@@ -17,7 +17,7 @@ if($format==='json'){
 }
 if($format==='csv'){
     header('Content-Type: text/csv');
-    header('Content-disposition: filename="subscribers.csv"');
+    header('Content-disposition: attachment; filename="subscribers.csv"');
     $str = '';
     $row = [];
     $colnames_added = false;
