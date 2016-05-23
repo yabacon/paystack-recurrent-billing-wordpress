@@ -456,6 +456,10 @@ function paystack_recurrent_billing_settings_section_callback()
                 <div style="
     padding: 20px;
 ">
+                <h3 id="export">Export Data</h3>
+                <p>Export Data: <a href="'.plugins_url( 'links/export.php', __DIR__ ).'" 
+                target="_blank">CSV</a>&nbsp;&nbsp;<a href="'.plugins_url( 'links/export.php', __DIR__ ).'?json"
+                target="_blank">JSON</a></p>
                 <h3 id="settings">Setup Instructions</h3>
                 
     <ol>
@@ -723,6 +727,14 @@ Thanks!
         return;
     }
     return $subscriber;
+}
+
+function paystack_recurrent_billing_get_all_subscribers (){
+    // get subscribers
+    global $wpdb;
+    return $wpdb->get_results( 
+            'SELECT * FROM `'.PAYSTACK_RECURRENT_BILLING_TABLE.' ORDER BY id DESC'
+    );
 }
 
 function paystack_recurrent_billing_get_subscriber_by_email_no_code ($evt, $notify=false){
