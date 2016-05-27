@@ -4,7 +4,7 @@ Donate link: https://paystack.com/demo
 Tags: paystack, recurrent payments, nigeria, mastercard, visa, target
 Requires at least: 4.1
 Tested up to: 4.5
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -79,6 +79,9 @@ You can also follow us on Twitter! **[@paystack](http://twitter.com/paystack)**
 
 
 == Changelog ==
+
+= 1.0.4 =
+*   Fixed issue that causes callback to fail if no sender name or no sender email is set
 
 = 1.0.3 =
 *   Add option to set Alert Sender email and name

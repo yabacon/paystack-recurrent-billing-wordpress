@@ -47,13 +47,13 @@ function paystack_recurrent_billing_get_alert_emails()
 
 function paystack_recurrent_billing_get_alert_email_sender_name()
 {
-    $options = get_option( 'paystack_recurrent_billing_settings', array('paystack_recurrent_billing_get_alert_email_sender_name'=>"Paystack Recurrent Billing on " . get_bloginfo( 'name', 'display' )));
+    $options = get_option( 'paystack_recurrent_billing_settings', array('paystack_recurrent_billing_get_alert_email_sender_name'=>"Paystack Recurrent Billing Plugin" ));
     return trim($options['paystack_recurrent_billing_get_alert_email_sender_name']);
 }
 
 function paystack_recurrent_billing_get_alert_email_sender()
 {
-    $options = get_option( 'paystack_recurrent_billing_settings', array('paystack_recurrent_billing_alert_email_sender'=>get_bloginfo( 'admin_email', 'display' )));
+    $options = get_option( 'paystack_recurrent_billing_settings', array('paystack_recurrent_billing_alert_email_sender'=>'support@paystack.com'));
     return trim($options['paystack_recurrent_billing_alert_email_sender']);
 }
 
@@ -630,7 +630,8 @@ function paystack_recurrent_billing_alert_them ($subject, $message){
         ) . "?= <".
             ( 
                 filter_var(paystack_recurrent_billing_get_alert_email_sender(), FILTER_VALIDATE_EMAIL) ? 
-                    paystack_recurrent_billing_get_alert_email_sender() : 'support@paystack.com'.">\r\n";
+                    paystack_recurrent_billing_get_alert_email_sender() : 'support@paystack.com'
+            ).">\r\n";
     $headers.= "Content-Type: text/plain;charset=utf-8\r\n";
     $headers.= "X-Mailer: PHP/" . phpversion();
 
