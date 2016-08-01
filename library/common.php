@@ -19,6 +19,7 @@ function paystack_recurrent_billing_verify_short_code($atts)
     $toret->target = (is_array($atts) && array_key_exists('target', $atts)) ? $atts['target'] : null;
     $toret->plancode = (is_array($atts) && array_key_exists('plancode', $atts)) ? $atts['plancode'] : false;
     $toret->message = (is_array($atts) && array_key_exists('message', $atts)) ? $atts['message'] : false;
+    $toret->successurl = (is_array($atts) && array_key_exists('successurl', $atts)) ? $atts['successurl'] : false;
 
     // cost must be a valid float or not at all
     if ($toret->target && !floatval($toret->target)) {
@@ -334,14 +335,17 @@ $bs.remove();
             var callbackurl = \''.
                 plugins_url( 'links/callback.php', __DIR__ ) .
                 '?\' + serialize(sendthis);
-            $.get( callbackurl ).fail(function() {
+            $.get( callbackurl ).done(function() {
+                    $("#payment-form, .demo-talk").addClass(\'hidden\');
+                    $("#success-message").removeClass(\'hidden\').find(\'#trans-ref\').text(response.trxref);
+                    '.($att->successurl ? 'window.location = ' . $att->successurl .';':'').'
+                }).fail(function() {
                 // redirect if AJAX fails
                 $("#success-message").removeClass(\'hidden\').
                     find(\'#trans-ref\').text(response.trxref+ \'. Please wait while you are redirected... \');
-                window.location = callbackurl;
+                window.location = callbackurl + \'success_url=\' + encodeURIComponent('.$att->successurl.');
               });
-            $("#payment-form, .demo-talk").addClass(\'hidden\');
-            $("#success-message").removeClass(\'hidden\').find(\'#trans-ref\').text(response.trxref);
+            
           }
         })
         paystackHandler.openIframe();
