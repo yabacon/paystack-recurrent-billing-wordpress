@@ -524,7 +524,7 @@ function paystack_recurrent_billing_settings_section_callback()
     Dashboard</a> to: <pre>'.plugins_url( 'links/webhook.php', __DIR__ ).'</pre></li>
     <li>Configure the plugin by filling the Alert Emails, Paystack Secret Key and Paystack Public Key fields below.</li>
     <li>Include the shortcode: <b>[paystackrecurrentbilling 
-    target="<i>NGN_AMT</i>" message="<i>MESSAGE</i>" plancode="<i>PLAN_CODE</i>"  successurl="<i>SUCCESS_URL</i>"]</b> 
+    target="<i>NGN_AMT</i>" message="<i>MESSAGE</i>" plancode="<i>PLAN_CODE</i>"  successurl="<i>SUCCESS_URL</i>"  metatitle="<i>META_TITLE</i>"  metadescription="<i>META_DESCRIPTION</i>"]</b> 
     in the page where you want the subscription form displayed.
     <p style="text-align:justify">Replace <i>PLAN_CODE</i> with the code for the plan you have created
     here: <a target="_blank" href="https://dashboard.paystack.co/#/plans">https://dashboard.paystack.co/#/plans</a> 
@@ -536,7 +536,9 @@ function paystack_recurrent_billing_settings_section_callback()
     Note that the message is optional and a default of <b>You will also get a confirmation message in the mail.</b> will be displayed.
     <p style="text-align:justify">Replace <i>SUCCESS_URL</i> with the URL you want to which the visitor should be sent after a successful subscription 
     Note that the SUCCESS_URL is an optional valid url and the user will remain on the page if not provided.
-    <p>e.g. <b>[paystackrecurrentbilling target="10000" message="Thanks for subscribing!" plancode="PLN_xxx" successurl="https://blog.paystack.com/on/updates"]</b>', 
+    <p style="text-align:justify">Replace <i>META_TITLE</i> with the title to use instead of "Additional Data".
+    <p style="text-align:justify">Replace <i>META_DESCRIPTION</i> with the description to use instead of "Tell us more about your payment.".
+    <p>e.g. <b>[paystackrecurrentbilling target="10000" message="Thanks for subscribing!" plancode="PLN_xxx" successurl="https://blog.paystack.com/on/updates" metatitle="Delivery Address" metadescription="Your Delivery address. Include all information that can help us locate you."]</b>', 
     'paystack_recurrent_billing</p></li>
     </ol>
             </div>
