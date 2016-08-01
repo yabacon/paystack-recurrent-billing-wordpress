@@ -40,7 +40,7 @@ $subscriber->subscriptioncode = paystack_recurrent_billing_get_subscription_code
 
 paystack_recurrent_billing_add_subscriber($subscriber);
 
-$successurl = filter_input(INPUT_GET, 'successurl', FILTER_VALIDATE_URL);
+$successurl = filter_input(INPUT_GET, 'success_url', FILTER_VALIDATE_URL);
 if($successurl){
     header('Location: ' . $successurl);
     echo "redirecting to... {$successurl}. If you are not redirected, <a href='{$successurl}'>please click here</a>...<br>";
