@@ -522,17 +522,19 @@ function paystack_recurrent_billing_settings_section_callback()
     Dashboard</a> to: <pre>'.plugins_url( 'links/webhook.php', __DIR__ ).'</pre></li>
     <li>Configure the plugin by filling the Alert Emails, Paystack Secret Key and Paystack Public Key fields below.</li>
     <li>Include the shortcode: <b>[paystackrecurrentbilling 
-    target="<i>NGN_AMT</i>" message="<i>MESSAGE</i>" plancode="<i>PLAN_CODE</i>"]</b> 
+    target="<i>NGN_AMT</i>" message="<i>MESSAGE</i>" plancode="<i>PLAN_CODE</i>"  successurl="<i>SUCCESS_URL</i>"]</b> 
     in the page where you want the subscription form displayed.
     <p style="text-align:justify">Replace <i>PLAN_CODE</i> with the code for the plan you have created
     here: <a target="_blank" href="https://dashboard.paystack.co/#/plans">https://dashboard.paystack.co/#/plans</a> 
     If you will be setting a target, be sure to make the target a multiple of the plan cost. This is a
     required field.
     <p style="text-align:justify">Replace <i>NGN_AMT</i> with the target amount in naira to be charged in total (all digits, no commas). 
-    Note that the cost is optional and the subscription will continue indefinitely if not provided.
+    Note that the target is optional and the subscription will continue indefinitely if not provided.
     <p style="text-align:justify">Replace <i>MESSAGE</i> with the message you want to display to your visitor after a successful subscription 
     Note that the message is optional and a default of <b>You will also get a confirmation message in the mail.</b> will be displayed.
-    <p>e.g. <b>[paystackrecurrentbilling target="10000" message="Thanks for subscribing!" plancode="PLN_xxx"]</b>', 
+    <p style="text-align:justify">Replace <i>SUCCESS_URL</i> with the URL you want to which the visitor should be sent after a successful subscription 
+    Note that the SUCCESS_URL is an optional valid url and the user will remain on the page if not provided.
+    <p>e.g. <b>[paystackrecurrentbilling target="10000" message="Thanks for subscribing!" plancode="PLN_xxx" successurl="https://blog.paystack.com/on/updates"]</b>', 
     'paystack_recurrent_billing</p></li>
     </ol>
             </div>
