@@ -338,12 +338,12 @@ $bs.remove();
             $.get( callbackurl ).done(function() {
                     $("#payment-form, .demo-talk").addClass(\'hidden\');
                     $("#success-message").removeClass(\'hidden\').find(\'#trans-ref\').text(response.trxref);
-                    '.($att->successurl ? 'window.location = ' . $att->successurl .';':'').'
+                    '.($att->successurl ? 'window.location = \'' . addslashes($att->successurl) .'\';':'').'
                 }).fail(function() {
                 // redirect if AJAX fails
                 $("#success-message").removeClass(\'hidden\').
                     find(\'#trans-ref\').text(response.trxref+ \'. Please wait while you are redirected... \');
-                window.location = callbackurl + \'success_url=\' + encodeURIComponent('.$att->successurl.');
+                window.location = callbackurl + \'&success_url=\' + encodeURIComponent(\''.addslashes($att->successurl).'\');
               });
             
           }
