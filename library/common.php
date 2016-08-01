@@ -9,7 +9,7 @@ global $wpdb;
 
 define('PAYSTACK_RECURRENT_BILLING_TABLE', $wpdb->prefix . "paystack_recurrent_billing");
 define('PAYSTACK_RECURRENT_BILLING_CODES_TABLE', $wpdb->prefix . "paystack_recurrent_billing_codes");
-define('PAYSTACK_RECURRENT_BILLING_DB_VERSION', "1.0");
+define('PAYSTACK_RECURRENT_BILLING_DB_VERSION', "1.1");
 
 function paystack_recurrent_billing_verify_short_code($atts)
 {
@@ -20,6 +20,8 @@ function paystack_recurrent_billing_verify_short_code($atts)
     $toret->plancode = (is_array($atts) && array_key_exists('plancode', $atts)) ? $atts['plancode'] : false;
     $toret->message = (is_array($atts) && array_key_exists('message', $atts)) ? $atts['message'] : false;
     $toret->successurl = (is_array($atts) && array_key_exists('successurl', $atts)) ? $atts['successurl'] : false;
+    $toret->metadescription = (is_array($atts) && array_key_exists('metadescription', $atts)) ? $atts['metadescription'] : false;
+    $toret->metatitle = (is_array($atts) && array_key_exists('metatitle', $atts)) ? $atts['metatitle'] : false;
 
     // cost must be a valid float or not at all
     if ($toret->target && !floatval($toret->target)) {
@@ -108,10 +110,10 @@ $bs.remove();
     <input id="payment-phone" type="tel" class="form-control" placeholder="Your phone number" autocomplete="off">
     <span class="help-block hidden">* Please use a valid phone number</span>
   </div>
-  <div class="form-group payment-form deliveryaddress">
-    <label for="">Delivery Address</label>
-    <textarea id="payment-deliveryaddress" class="form-control textarea" 
-        placeholder="Your Delivery address. Include all information that can help us locate you." autocomplete="off"></textarea>
+  <div class="form-group payment-form metadata">
+    <label for="">'.($att->metatitle ? : 'Additional Information').'</label>
+    <textarea id="payment-metadata" class="form-control textarea" 
+        placeholder="'.($att->metadescription ? : 'Tell us more about your payment.').'" autocomplete="off"></textarea>
     <span class="help-block hidden">* Please enter a valid address</span>
   </div>
   <div class="form-group text-right call-to-action">
@@ -134,7 +136,7 @@ $bs.remove();
       var invalid_email=true;
       var invalid_firstname=true;
       var invalid_lastname=true;
-      var invalid_deliveryaddress=true;
+      var invalid_metadata=true;
       var invalid_phone=true;
       var paystackHandler;
 
@@ -214,23 +216,23 @@ $bs.remove();
         }, 500);
       });
 
-      $(\'#payment-deliveryaddress\').on(\'keyup\', function () {
+      $(\'#payment-metadata\').on(\'keyup\', function () {
         clearTimeout(typingTimer);
-        var deliveryaddress = $(this).val().trim();
+        var metadata = $(this).val().trim();
         var parent = $(this).parent();
-        var deliveryaddress_helper = $(this).siblings(\'.help-block\');
+        var metadata_helper = $(this).siblings(\'.help-block\');
         typingTimer = setTimeout(function () {
-          if (validateNotBlank(deliveryaddress)) {
-            if (invalid_deliveryaddress) {
+          if (validateNotBlank(metadata)) {
+            if (invalid_metadata) {
               parent.removeClass(\'has-error\');
-              deliveryaddress_helper.addClass(\'hidden\');
-              invalid_deliveryaddress = false;
+              metadata_helper.addClass(\'hidden\');
+              invalid_metadata = false;
             }
           } else {
-            if (!invalid_deliveryaddress) {
+            if (!invalid_metadata) {
               parent.addClass(\'has-error\');
-              deliveryaddress_helper.removeClass(\'hidden\')
-              invalid_deliveryaddress = true;
+              metadata_helper.removeClass(\'hidden\')
+              invalid_metadata = true;
             }
           }
         }, 500);
@@ -267,7 +269,7 @@ $bs.remove();
         subscriber.firstname = $(\'#payment-firstname\').val().trim();
         subscriber.lastname = $(\'#payment-lastname\').val().trim();
         subscriber.phone = $(\'#payment-phone\').val().trim();
-        subscriber.deliveryaddress = $(\'#payment-deliveryaddress\').val().trim();
+        subscriber.metadata = $(\'#payment-metadata\').val().trim();
 
         if (!validateEmail(subscriber.email)) {
           $(\'.payment-form.email\').addClass(\'has-error\');
@@ -287,9 +289,9 @@ $bs.remove();
           return;
         }
 
-        if (!validateNotBlank(subscriber.deliveryaddress)) {
-          $(\'.payment-form.deliveryaddress\').addClass(\'has-error\');
-          $(\'.deliveryaddress .help-block\').removeClass(\'hidden\');
+        if (!validateNotBlank(subscriber.metadata)) {
+          $(\'.payment-form.metadata\').addClass(\'has-error\');
+          $(\'.metadata .help-block\').removeClass(\'hidden\');
           return;
         }
 
@@ -589,6 +591,8 @@ function paystack_recurrent_billing_install () {
           PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
         
+        ALTER TABLE `".PAYSTACK_RECURRENT_BILLING_TABLE."` CHANGE `deliveryaddress` `metadata` text COLLATE utf8_unicode_ci DEFAULT NULL;
+        
         CREATE TABLE `".PAYSTACK_RECURRENT_BILLING_CODES_TABLE."` (
           `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
           `subscriptioncode` varchar(100) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
@@ -654,7 +658,7 @@ Just a heads up about a new subscriber to your plan: '.$subscriber->payments[0]-
 
 Name: {$subscriber->firstname} {$subscriber->lastname}
 Email: {$subscriber->email}
-Delivery Address: {$subscriber->deliveryaddress}
+Additional Information: {$subscriber->metadata}
 ".($subscriber->debt ? "To Balance: {$subscriber->debt}" : "")."
 
 Thanks!
@@ -666,7 +670,7 @@ Thanks!
             'lastname' => $subscriber->lastname, 
             'email' => $subscriber->email, 
             'phone' => $subscriber->phone, 
-            'deliveryaddress' => $subscriber->deliveryaddress, 
+            'metadata' => $subscriber->metadata, 
             'subscriptioncode' => $subscriber->subscriptioncode, 
             'debt' => $subscriber->debt, 
             'payments' => json_encode($subscriber->payments), 
@@ -720,7 +724,7 @@ Just a heads up about a subscriber to your plan: '.$subscriber->payments[0]->pla
 
 Name: {$subscriber->firstname} {$subscriber->lastname}
 Email: {$subscriber->email}
-Delivery Address: {$subscriber->deliveryaddress}
+Additional Information: {$subscriber->metadata}
 
 Thanks!" );
     }
@@ -847,7 +851,7 @@ who has disabled their subscription.
 
 Name: {$subscriber->firstname} {$subscriber->lastname}
 Email: {$subscriber->email}
-Delivery Address: {$subscriber->deliveryaddress}
+Additional Information: {$subscriber->metadata}
 ".($subscriber->debt ? "To Balance: {$subscriber->debt}" : "")."
 
 Thanks!" );
