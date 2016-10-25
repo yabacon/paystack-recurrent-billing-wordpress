@@ -14,7 +14,7 @@ define('PAYSTACK_RECURRENT_BILLING_DB_VERSION', "1.1");
 function paystack_recurrent_billing_verify_short_code($atts)
 {
     $toret = new stdClass();
-    
+
     $toret->buttontext = (is_array($atts) && array_key_exists('buttontext', $atts)) ? $atts['buttontext'] : "Subscribe";
     $toret->target = (is_array($atts) && array_key_exists('target', $atts)) ? $atts['target'] : null;
     $toret->plancode = (is_array($atts) && array_key_exists('plancode', $atts)) ? $atts['plancode'] : false;
@@ -32,7 +32,7 @@ function paystack_recurrent_billing_verify_short_code($atts)
     if (!$toret->plancode) {
         $toret->error = 'Plan Code is required.';
     }
-    
+
     return $toret;
 }
 
@@ -73,7 +73,7 @@ function paystack_recurrent_billing_form($atts)
     if($att->error){
         return $att->error;
     }
-    
+
     $form = '<script>
 // load jQuery 1.12.3 if not loaded
 (typeof $ === \'undefined\') && document.write("<scr" + "ipt type=\"text\/javascript\" src=\"https:\/\/code.jquery.com\/jquery-1.12.3.min.js\"><\/scr" + "ipt>");
@@ -112,7 +112,7 @@ $bs.remove();
   </div>
   <div class="form-group payment-form metadata">
     <label for="">'.($att->metatitle ? : 'Additional Information').'</label>
-    <textarea id="payment-metadata" class="form-control textarea" 
+    <textarea id="payment-metadata" class="form-control textarea"
         placeholder="'.($att->metadescription ? : 'Tell us more about your payment.').'" autocomplete="off"></textarea>
     <span class="help-block hidden">* Please enter a valid address</span>
   </div>
@@ -144,7 +144,7 @@ $bs.remove();
         var re = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i;
         return re.test(email);
       }
-      
+
       function validateNotBlank(str){
         return !(!str || !str.length || !str.trim().length);
       }
@@ -300,7 +300,7 @@ $bs.remove();
           $(\'.phone .help-block\').removeClass(\'hidden\');
           return;
         }
-        
+
         serialize = function(obj, prefix) {
           var str = [];
           for(var p in obj) {
@@ -325,7 +325,13 @@ $bs.remove();
           first_name: subscriber.firstname,
           last_name: subscriber.lastname,
           plan: \''.$att->plancode.'\',
-          metadata: serialize(sendthis),
+          metadata: {custom_fields:[
+                {
+                    display_name: "Form Data",
+                    variable_name: "form_data",
+                    value: serialize(sendthis),
+                }
+              ]},
           onClose: function () {
             payment_btn.attr(\'disabled\', false).html(\''.htmlspecialchars($att->buttontext).'\');
           },
@@ -347,7 +353,7 @@ $bs.remove();
                     find(\'#trans-ref\').text(response.trxref+ \'. Please wait while you are redirected... \');
                 window.location = callbackurl + \'&success_url=\' + encodeURIComponent(\''.addslashes($att->successurl).'\');
               });
-            
+
           }
         })
         paystackHandler.openIframe();
@@ -443,9 +449,9 @@ function paystack_recurrent_billing_public_key_render()
 
     $options = get_option('paystack_recurrent_billing_settings');
     ?>
-    <input type='text' name='paystack_recurrent_billing_settings[paystack_recurrent_billing_public_key]' 
+    <input type='text' name='paystack_recurrent_billing_settings[paystack_recurrent_billing_public_key]'
     value='<?php echo $options['paystack_recurrent_billing_public_key']; ?>' size="50">
-    <br><i>Obtain from: <a target="_blank" href="https://dashboard.paystack.co/#/settings/developer" 
+    <br><i>Obtain from: <a target="_blank" href="https://dashboard.paystack.co/#/settings/developer"
     target="_blank">Paystack Dashboard</a></i>
     <?php
 
@@ -456,9 +462,9 @@ function paystack_recurrent_billing_secret_key_render()
 
     $options = get_option('paystack_recurrent_billing_settings');
     ?>
-    <input type='text' name='paystack_recurrent_billing_settings[paystack_recurrent_billing_secret_key]' 
+    <input type='text' name='paystack_recurrent_billing_settings[paystack_recurrent_billing_secret_key]'
     value='<?php echo $options['paystack_recurrent_billing_secret_key']; ?>' size="50">
-    <br><i>Obtain from: <a target="_blank" href="https://dashboard.paystack.co/#/settings/developer" 
+    <br><i>Obtain from: <a target="_blank" href="https://dashboard.paystack.co/#/settings/developer"
     target="_blank">Paystack Dashboard</a></i>
     <?php
 
@@ -469,7 +475,7 @@ function paystack_recurrent_billing_alert_email_sender_render()
 
     $options = get_option('paystack_recurrent_billing_settings');
     ?>
-    <input type='text' name='paystack_recurrent_billing_settings[paystack_recurrent_billing_alert_email_sender]' 
+    <input type='text' name='paystack_recurrent_billing_settings[paystack_recurrent_billing_alert_email_sender]'
     value='<?php echo $options['paystack_recurrent_billing_alert_email_sender']; ?>' size="50">
     <br><i>Be sure to enter a valid Email</i>
     <?php
@@ -481,7 +487,7 @@ function paystack_recurrent_billing_alert_email_sender_name_render()
 
     $options = get_option('paystack_recurrent_billing_settings');
     ?>
-    <input type='text' name='paystack_recurrent_billing_settings[paystack_recurrent_billing_alert_email_sender_name]' 
+    <input type='text' name='paystack_recurrent_billing_settings[paystack_recurrent_billing_alert_email_sender_name]'
     value='<?php echo $options['paystack_recurrent_billing_alert_email_sender_name']; ?>' size="50">
     <br><i>Be sure to enter a name</i>
     <?php
@@ -493,7 +499,7 @@ function paystack_recurrent_billing_alert_emails_render()
 
     $options = get_option('paystack_recurrent_billing_settings');
     ?>
-    <input type='text' name='paystack_recurrent_billing_settings[paystack_recurrent_billing_alert_emails]' 
+    <input type='text' name='paystack_recurrent_billing_settings[paystack_recurrent_billing_alert_emails]'
     value='<?php echo $options['paystack_recurrent_billing_alert_emails']; ?>' size="50">
     <br><i>Be sure to enter valid emails separated by a comma</i>
     <?php
@@ -513,32 +519,32 @@ function paystack_recurrent_billing_settings_section_callback()
     padding: 20px;
 ">
                 <h3 id="export">Export Data</h3>
-                <p>Export Data: <a href="'.wp_nonce_url(plugins_url( 'links/export.php', __DIR__ ), 'export_csv', 'link_clicked').'" 
+                <p>Export Data: <a href="'.wp_nonce_url(plugins_url( 'links/export.php', __DIR__ ), 'export_csv', 'link_clicked').'"
                 target="_blank">CSV</a>&nbsp;&nbsp;<a href="'.wp_nonce_url(plugins_url( 'links/export.php', __DIR__ ), 'export_json', 'link_clicked').'"
                 target="_blank">JSON</a></p>
                 <h3 id="settings">Setup Instructions</h3>
-                
+
     <ol>
-    <li>Set your Live WebHook URL here: <a target="_blank" 
+    <li>Set your Live WebHook URL here: <a target="_blank"
     href="https://dashboard.paystack.co/#/settings/developer" target="_blank">Paystack
     Dashboard</a> to: <pre>'.plugins_url( 'links/webhook.php', __DIR__ ).'</pre></li>
     <li>Configure the plugin by filling the Alert Emails, Paystack Secret Key and Paystack Public Key fields below.</li>
-    <li>Include the shortcode: <b>[paystackrecurrentbilling 
-    target="<i>NGN_AMT</i>" message="<i>MESSAGE</i>" plancode="<i>PLAN_CODE</i>"  successurl="<i>SUCCESS_URL</i>"  metatitle="<i>META_TITLE</i>"  metadescription="<i>META_DESCRIPTION</i>"]</b> 
+    <li>Include the shortcode: <b>[paystackrecurrentbilling
+    target="<i>NGN_AMT</i>" message="<i>MESSAGE</i>" plancode="<i>PLAN_CODE</i>"  successurl="<i>SUCCESS_URL</i>"  metatitle="<i>META_TITLE</i>"  metadescription="<i>META_DESCRIPTION</i>"]</b>
     in the page where you want the subscription form displayed.
     <p style="text-align:justify">Replace <i>PLAN_CODE</i> with the code for the plan you have created
-    here: <a target="_blank" href="https://dashboard.paystack.co/#/plans">https://dashboard.paystack.co/#/plans</a> 
+    here: <a target="_blank" href="https://dashboard.paystack.co/#/plans">https://dashboard.paystack.co/#/plans</a>
     If you will be setting a target, be sure to make the target a multiple of the plan cost. This is a
     required field.
-    <p style="text-align:justify">Replace <i>NGN_AMT</i> with the target amount in naira to be charged in total (all digits, no commas). 
+    <p style="text-align:justify">Replace <i>NGN_AMT</i> with the target amount in naira to be charged in total (all digits, no commas).
     Note that the target is optional and the subscription will continue indefinitely if not provided.
-    <p style="text-align:justify">Replace <i>MESSAGE</i> with the message you want to display to your visitor after a successful subscription 
+    <p style="text-align:justify">Replace <i>MESSAGE</i> with the message you want to display to your visitor after a successful subscription
     Note that the message is optional and a default of <b>You will also get a confirmation message in the mail.</b> will be displayed.
-    <p style="text-align:justify">Replace <i>SUCCESS_URL</i> with the URL you want to which the visitor should be sent after a successful subscription 
+    <p style="text-align:justify">Replace <i>SUCCESS_URL</i> with the URL you want to which the visitor should be sent after a successful subscription
     Note that the SUCCESS_URL is an optional valid url and the user will remain on the page if not provided.
     <p style="text-align:justify">Replace <i>META_TITLE</i> with the title to use instead of "Additional Data".
     <p style="text-align:justify">Replace <i>META_DESCRIPTION</i> with the description to use instead of "Tell us more about your payment.".
-    <p>e.g. <b>[paystackrecurrentbilling target="10000" message="Thanks for subscribing!" plancode="PLN_xxx" successurl="https://blog.paystack.com/on/updates" metatitle="Delivery Address" metadescription="Your Delivery address. Include all information that can help us locate you."]</b>', 
+    <p>e.g. <b>[paystackrecurrentbilling target="10000" message="Thanks for subscribing!" plancode="PLN_xxx" successurl="https://blog.paystack.com/on/updates" metatitle="Delivery Address" metadescription="Your Delivery address. Include all information that can help us locate you."]</b>',
     'paystack_recurrent_billing</p></li>
     </ol>
             </div>
@@ -546,7 +552,7 @@ function paystack_recurrent_billing_settings_section_callback()
     </div>
     </div>
     </div>
-    
+
     ');
 
 }
@@ -557,15 +563,15 @@ function paystack_recurrent_billing_options_page()
 
     ?>
     <form action='options.php' method='post'>
-        
+
         <h2>Paystack Recurrent Billing</h2>
-        
+
         <?php
         settings_fields('paystack_recurrent_billing_pluginPage');
         do_settings_sections('paystack_recurrent_billing_pluginPage');
         submit_button();
         ?>
-        
+
     </form>
     <?php
 
@@ -592,9 +598,9 @@ function paystack_recurrent_billing_install () {
           `ip` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
           PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-        
+
         ALTER TABLE `".PAYSTACK_RECURRENT_BILLING_TABLE."` CHANGE `deliveryaddress` `metadata` text COLLATE utf8_unicode_ci DEFAULT NULL;
-        
+
         CREATE TABLE `".PAYSTACK_RECURRENT_BILLING_CODES_TABLE."` (
           `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
           `subscriptioncode` varchar(100) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
@@ -640,8 +646,8 @@ function paystack_recurrent_billing_alert_them ($subject, $message){
     $headers.= "From: =?utf-8?Q?" . quoted_printable_encode(
             ( paystack_recurrent_billing_get_alert_email_sender_name() ?: "Paystack Recurrent Billing Plugin")
         ) . "?= <".
-            ( 
-                filter_var(paystack_recurrent_billing_get_alert_email_sender(), FILTER_VALIDATE_EMAIL) ? 
+            (
+                filter_var(paystack_recurrent_billing_get_alert_email_sender(), FILTER_VALIDATE_EMAIL) ?
                     paystack_recurrent_billing_get_alert_email_sender() : 'support@paystack.com'
             ).">\r\n";
     $headers.= "Content-Type: text/plain;charset=utf-8\r\n";
@@ -665,19 +671,19 @@ Additional Information: {$subscriber->metadata}
 
 Thanks!
         " );
-    $wpdb->insert( 
-        PAYSTACK_RECURRENT_BILLING_TABLE, 
-        array( 
-            'firstname' => $subscriber->firstname, 
-            'lastname' => $subscriber->lastname, 
-            'email' => $subscriber->email, 
-            'phone' => $subscriber->phone, 
-            'metadata' => $subscriber->metadata, 
-            'subscriptioncode' => $subscriber->subscriptioncode, 
-            'debt' => $subscriber->debt, 
-            'payments' => json_encode($subscriber->payments), 
-            'ip' => paystack_recurrent_billing_get_ip_address(), 
-        ) 
+    $wpdb->insert(
+        PAYSTACK_RECURRENT_BILLING_TABLE,
+        array(
+            'firstname' => $subscriber->firstname,
+            'lastname' => $subscriber->lastname,
+            'email' => $subscriber->email,
+            'phone' => $subscriber->phone,
+            'metadata' => $subscriber->metadata,
+            'subscriptioncode' => $subscriber->subscriptioncode,
+            'debt' => $subscriber->debt,
+            'payments' => json_encode($subscriber->payments),
+            'ip' => paystack_recurrent_billing_get_ip_address(),
+        )
     );
 }
 
@@ -733,42 +739,42 @@ Thanks!" );
     $subscriber->payments = json_encode($payments);
 
     // update subscriber info
-    $wpdb->update( 
-        PAYSTACK_RECURRENT_BILLING_TABLE, 
-        array( 
+    $wpdb->update(
+        PAYSTACK_RECURRENT_BILLING_TABLE,
+        array(
             'payments' => $subscriber->payments,
             'debt' => $subscriber->debt
-        ), 
-        array( 'id' => $subscriber->id ), 
-        array( 
+        ),
+        array( 'id' => $subscriber->id ),
+        array(
             '%s',
             '%f'
-        ), 
-        array( '%d' ) 
+        ),
+        array( '%d' )
     );
     return true;
 }
 
 function paystack_recurrent_billing_get_subscription_code($plancode, $customercode){
     global $wpdb;
-    $subscriptioncode = $wpdb->get_var( 
+    $subscriptioncode = $wpdb->get_var(
         $wpdb->prepare(
-            'SELECT `subscriptioncode` FROM `'.PAYSTACK_RECURRENT_BILLING_CODES_TABLE.'` 
+            'SELECT `subscriptioncode` FROM `'.PAYSTACK_RECURRENT_BILLING_CODES_TABLE.'`
             WHERE `plancode` = %s AND `customercode` = %s AND `used`=0',
             $plancode, $customercode
         )
     );
     // update subscriber info
-    $wpdb->update( 
-        PAYSTACK_RECURRENT_BILLING_CODES_TABLE, 
-        array( 
+    $wpdb->update(
+        PAYSTACK_RECURRENT_BILLING_CODES_TABLE,
+        array(
             'used' => 1
-        ), 
-        array( 'subscriptioncode' => $subscriptioncode ), 
-        array( 
+        ),
+        array( 'subscriptioncode' => $subscriptioncode ),
+        array(
             '%s'
-        ), 
-        array( '%s' ) 
+        ),
+        array( '%s' )
     );
     return $subscriptioncode;
 }
@@ -777,7 +783,7 @@ function paystack_recurrent_billing_get_subscriber_by_code ($evt){
     // get subscriber by code
     $subcode = $evt->data->subscription_code ? : $evt->data->subscription->subscription_code;
     global $wpdb;
-    $subscriber = $wpdb->get_row( 
+    $subscriber = $wpdb->get_row(
         $wpdb->prepare(
             'SELECT * FROM `'.PAYSTACK_RECURRENT_BILLING_TABLE.'` WHERE `subscriptioncode` = %s',
             $subcode
@@ -806,7 +812,7 @@ Thanks!
 function paystack_recurrent_billing_get_all_subscribers (){
     // get subscribers
     global $wpdb;
-    return $wpdb->get_results( 
+    return $wpdb->get_results(
             'SELECT * FROM `'.PAYSTACK_RECURRENT_BILLING_TABLE.'` ORDER BY id DESC'
     );
 }
@@ -814,7 +820,7 @@ function paystack_recurrent_billing_get_all_subscribers (){
 function paystack_recurrent_billing_get_subscriber_by_email_no_code ($evt, $notify=false){
     // get subscriber by email who has no subscription code
     global $wpdb;
-    $subscriber = $wpdb->get_row( 
+    $subscriber = $wpdb->get_row(
         $wpdb->prepare(
             'SELECT * FROM `'.PAYSTACK_RECURRENT_BILLING_TABLE.'` WHERE `email` = %s AND  and `subscription_code` IS NULL',
             $evt->data->customer->email
@@ -848,7 +854,7 @@ function paystack_recurrent_billing_check_debt_and_notify ($evt){
 
     paystack_recurrent_billing_alert_them('A subscriber\'s subscription has been disabled!','Hi,
 
-Just a heads up about a subscriber to your plan: '.$subscriber->payments[0]->plan_name." 
+Just a heads up about a subscriber to your plan: '.$subscriber->payments[0]->plan_name."
 who has disabled their subscription.
 
 Name: {$subscriber->firstname} {$subscriber->lastname}
@@ -862,28 +868,28 @@ Thanks!" );
 
 function paystack_recurrent_billing_update_subscription_code ($evt){
     global $wpdb;
-    $wpdb->insert( 
-        PAYSTACK_RECURRENT_BILLING_CODES_TABLE, 
-        array( 
-            'plancode' => $evt->data->plan->plan_code, 
-            'customercode' => $evt->data->customer->customer_code, 
+    $wpdb->insert(
+        PAYSTACK_RECURRENT_BILLING_CODES_TABLE,
+        array(
+            'plancode' => $evt->data->plan->plan_code,
+            'customercode' => $evt->data->customer->customer_code,
             'subscriptioncode' => $evt->data->subscription_code
-        ) 
+        )
     );
 
     $subscriber = paystack_recurrent_billing_get_subscriber_by_email_no_code($evt);
     if($subscriber){
         // update subscriber info
-        $wpdb->update( 
-            PAYSTACK_RECURRENT_BILLING_TABLE, 
-            array( 
+        $wpdb->update(
+            PAYSTACK_RECURRENT_BILLING_TABLE,
+            array(
                 'subscriptioncode' => $evt->subscription_code
-            ), 
-            array( 'id' => $subscriber->id ), 
-            array( 
+            ),
+            array( 'id' => $subscriber->id ),
+            array(
                 '%s'
-            ), 
-            array( '%d' ) 
+            ),
+            array( '%d' )
         );
         return true;
     }
