@@ -4,6 +4,11 @@ if(!defined('ABSPATH')){
     // use $wpdb directly
     require_once( dirname(dirname(dirname(dirname(__DIR__)))) . '/wp-load.php' );
 }
+
+if(!class_exists('Paystack_Recurrent_Billing_Subscribers')){
+    require_once(__DIR__ . '/paystack-recurrent-billing-subscribers.php');
+}
+
 require(__DIR__ . '/Paystack.php');
 
 function paystack_recurrent_billing_table(){
@@ -16,7 +21,7 @@ function paystack_recurrent_billing_codes_table(){
 }
 
 function paystack_recurrent_billing_db_version(){
-	return "1.2";
+	return "1.6";
 }
 
 function paystack_recurrent_billing_verify_short_code($atts)
@@ -598,8 +603,9 @@ function paystack_recurrent_billing_install () {
           `email` varchar(100) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
           `phone` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
           `subscriptioncode` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
-          `metadata` text COLLATE utf8_unicode_ci DEFAULT NULL,
+          `deliveryaddress` text COLLATE utf8_unicode_ci DEFAULT NULL,
           `debt` DECIMAL(13, 2) NULL,
+          `stopped` BOOLEAN NOT NULL DEFAULT FALSE,
           `payments` longtext COLLATE utf8_unicode_ci,
           `whensubscribed` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           `internalnotes` text COLLATE utf8_unicode_ci,
@@ -621,6 +627,11 @@ function paystack_recurrent_billing_install () {
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
         dbDelta( $sql );
 
+		// Alterations
+		global $wpdb;
+		$wpdb->query('ALTER TABLE  `' . paystack_recurrent_billing_table() . '` CHANGE  `whensubscribed`  `whensubscribed` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ;');
+		$wpdb->query('ALTER TABLE  `' . paystack_recurrent_billing_codes_table() . '` CHANGE  `whensubscribed`  `whensubscribed` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ;');
+		$wpdb->query('ALTER TABLE  `' . paystack_recurrent_billing_table() . '` CHANGE  `deliveryaddress`  `metadata` TEXT CHARACTER SET utf8 COLLATE utf8_unicode_ci NULL DEFAULT NULL ;');
         update_option( "paystack_recurrent_billing_db_version", paystack_recurrent_billing_db_version() );
     }
 }
@@ -693,14 +704,111 @@ Thanks!
     );
 }
 
-function paystack_recurrent_billing_add_invoice_payment ($evt){
+function paystack_recurrent_billing_poke_subscriber ($subscriber){
+	$payments = json_decode($subscriber->payments);
+	$auth_code = $payments[0]->authorization->authorization_code;
+	$current_user = wp_get_current_user();
+	$poked_by = "Unknown User";
+	if($current_user){
+		$poked_by = 'Username: ' . $current_user->user_login . ' | ';
+		$poked_by .= 'User email: ' . $current_user->user_email . ' | ';
+		$poked_by .= 'User first name: ' . $current_user->user_firstname . ' | ';
+		$poked_by .= 'User last name: ' . $current_user->user_lastname . ' | ';
+		$poked_by .= 'User display name: ' . $current_user->display_name . ' | ';
+		$poked_by .= 'User ID: ' . $current_user->ID;
+	}
+	$b = [
+		'email'=>$payments[0]->customer->email,
+		'amount'=>$payments[0]->amount,
+		'authorization_code'=>$auth_code,
+		'metadata'=>json_encode([
+			"custom_fields"=>[
+				[
+					"display_name"=>"Paid Via",
+					"variable_name"=>"paid_via",
+					"value"=>"Paystack Recurrent Billing Wordpress Plugin",
+				],
+				[
+					"display_name"=>"Poked By",
+					"variable_name"=>"poked_by",
+					"value"=>$poked_by,
+				],
+			]
+		]),
+	];
+	$paystack = new Paystack(paystack_recurrent_billing_get_secret_key());
+	try {
+		$poke_res = $paystack->transaction->charge($b);
+	} catch(Exception $e) {
+		return false;
+	}
+
+	if('success' == $poke_res->data->status){
+		paystack_recurrent_billing_add_invoice_payment($poke_res, $subscriber);
+		return true;
+	}
+}
+
+function paystack_recurrent_billing_resume_subscription_for_id ($subscriber_id){
+	$subscriber = paystack_recurrent_billing_get_subscriber_by_id($subscriber_id);
+	paystack_recurrent_billing_resume_subscription ($subscriber);
+}
+
+function paystack_recurrent_billing_stop_subscription_for_id ($subscriber_id){
+	$subscriber = paystack_recurrent_billing_get_subscriber_by_id($subscriber_id);
+	paystack_recurrent_billing_stop_subscription ($subscriber);
+}
+
+function paystack_recurrent_billing_stop_subscription ($subscriber){
+	global $wpdb;
+	$paystack = new Paystack(paystack_recurrent_billing_get_secret_key());
+	$subscriptiondata = $paystack->subscription($subscriber->subscriptioncode);
+	$paystack->subscription->disable(['code'=>$subscriptiondata->data->subscription_code, 'token'=>$subscriptiondata->data->email_token ]);
+	$wpdb->update(
+		paystack_recurrent_billing_table(),
+		array(
+			'stopped' => 1,
+		),
+		array( 'id' => $subscriber->id ),
+		array(
+			'%s',
+			'%f'
+		),
+		array( '%d' )
+	);
+	return true;
+}
+
+function paystack_recurrent_billing_resume_subscription ($subscriber){
+	global $wpdb;
+	$paystack = new Paystack(paystack_recurrent_billing_get_secret_key());
+	$subscriptiondata = $paystack->subscription($subscriber->subscriptioncode);
+	$paystack->subscription->enable(['code'=>$subscriptiondata->data->subscription_code, 'token'=>$subscriptiondata->data->email_token ]);
+	$wpdb->update(
+		paystack_recurrent_billing_table(),
+		array(
+			'stopped' => 0,
+		),
+		array( 'id' => $subscriber->id ),
+		array(
+			'%s',
+			'%f'
+		),
+		array( '%d' )
+	);
+	return true;
+}
+
+function paystack_recurrent_billing_add_invoice_payment ($evt, $subscriber=null){
     global $wpdb;
     // only add successful payments
     if(strtolower($evt->data->status) != 'success'){
         return;
     }
 
-    $subscriber = paystack_recurrent_billing_get_subscriber_by_code($evt);
+	if(!$subscriber){
+		$subscriber = paystack_recurrent_billing_get_subscriber_for_event($evt);
+	}
     if(!$subscriber){
         return;
     }
@@ -713,25 +821,21 @@ function paystack_recurrent_billing_add_invoice_payment ($evt){
         //payments not found
         return;
     }
-    $tocomp = $evt->data->transaction->reference;
+    $tocomp = property_exists($evt, 'event') ? $evt->data->transaction->reference : $evt->data->reference;
     foreach($payments as $p){
-        // if the payment had an invoice code, it was an event, else a transaction
-        if(($p->invoice_code ? ($p->data->transaction->reference == $tocomp) : ($p->data->reference == $tocomp) )){
+        if((property_exists($p, 'event') ? ($p->data->transaction->reference == $tocomp) : ($p->data->reference == $tocomp) )){
             // trying to add same reference twice.
             return;
         }
     }
     $payments[] = $evt;
-    $disableit = false;
     $olddebt = $subscriber->debt;
     $subscriber->debt = $subscriber->debt ? ($subscriber->debt - ($evt->data->amount/100)) : null;
 
     if($olddebt && ($subscriber->debt<=0)){
         // debt fulfilled
-        $paystack = new Paystack(paystack_recurrent_billing_get_secret_key());
-        $subscriptiondata = $paystack->subscription($evt->data->subscription->subscription_code);
         // disable subscription at Paystack
-        $disabled = $paystack->subscription->disable(['code'=>$subscriptiondata->data->subscription_code, 'token'=>$subscriptiondata->data->email_token ]);
+        paystack_recurrent_billing_stop_subscription ($subscriber);
         paystack_recurrent_billing_alert_them('A subscriber\'s payment has been completed!','Hi,
 
 Just a heads up about a subscriber to your plan: '.$subscriber->payments[0]->plan_name." who has completed their payment.
@@ -785,17 +889,34 @@ function paystack_recurrent_billing_get_subscription_code($plancode, $customerco
     return $subscriptioncode;
 }
 
-function paystack_recurrent_billing_get_subscriber_by_code ($evt){
+function paystack_recurrent_billing_get_subscriber_by_id ($id){
+	global $wpdb;
+	$subscriber = $wpdb->get_row(
+		$wpdb->prepare(
+			'SELECT * FROM `'.paystack_recurrent_billing_table().'` WHERE `id` = %s',
+			$id
+		),
+		OBJECT
+	);
+	return $subscriber;
+}
+
+function paystack_recurrent_billing_get_subscriber_by_code ($subcode){
+	global $wpdb;
+	$subscriber = $wpdb->get_row(
+		$wpdb->prepare(
+			'SELECT * FROM `'.paystack_recurrent_billing_table().'` WHERE `subscriptioncode` = %s',
+			$subcode
+		),
+		OBJECT
+	);
+	return $subscriber;
+}
+
+function paystack_recurrent_billing_get_subscriber_for_event ($evt){
     // get subscriber by code
     $subcode = $evt->data->subscription_code ? : $evt->data->subscription->subscription_code;
-    global $wpdb;
-    $subscriber = $wpdb->get_row(
-        $wpdb->prepare(
-            'SELECT * FROM `'.paystack_recurrent_billing_table().'` WHERE `subscriptioncode` = %s',
-            $subcode
-        ),
-        OBJECT
-    );
+    $subscriber = paystack_recurrent_billing_get_subscriber_by_code ($subcode);
     if(!$subscriber){
         //subscriber not found
         paystack_recurrent_billing_alert_them('Subscriber Not found!','Hi,
@@ -853,7 +974,7 @@ Thanks!" );
 
 function paystack_recurrent_billing_check_debt_and_notify ($evt){
     global $wpdb;
-    $subscriber = paystack_recurrent_billing_get_subscriber_by_code($evt);
+    $subscriber = paystack_recurrent_billing_get_subscriber_for_event($evt);
     if(!$subscriber){
         return;
     }
