@@ -5,11 +5,19 @@ if(!defined('ABSPATH')){
     require_once( dirname(dirname(dirname(dirname(__DIR__)))) . '/wp-load.php' );
 }
 require(__DIR__ . '/Paystack.php');
-global $wpdb;
 
-define('PAYSTACK_RECURRENT_BILLING_TABLE', $wpdb->prefix . "paystack_recurrent_billing");
-define('PAYSTACK_RECURRENT_BILLING_CODES_TABLE', $wpdb->prefix . "paystack_recurrent_billing_codes");
-define('PAYSTACK_RECURRENT_BILLING_DB_VERSION', "1.1");
+function paystack_recurrent_billing_table(){
+	global $wpdb;
+	return $wpdb->prefix . "paystack_recurrent_billing";
+}
+function paystack_recurrent_billing_codes_table(){
+	global $wpdb;
+	return $wpdb->prefix . "paystack_recurrent_billing_codes";
+}
+
+function paystack_recurrent_billing_db_version(){
+	return "1.2";
+}
 
 function paystack_recurrent_billing_verify_short_code($atts)
 {
@@ -581,16 +589,16 @@ function paystack_recurrent_billing_install () {
 
     $installed_ver = get_option( "paystack_recurrent_billing_db_version" );
 
-    if ( $installed_ver != PAYSTACK_RECURRENT_BILLING_DB_VERSION ) {
+    if ( $installed_ver != paystack_recurrent_billing_db_version() ) {
 
-        $sql = "CREATE TABLE `".PAYSTACK_RECURRENT_BILLING_TABLE."` (
+        $sql = "CREATE TABLE `".paystack_recurrent_billing_table()."` (
           `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
           `firstname` varchar(200) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
           `lastname` varchar(200) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
           `email` varchar(100) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
           `phone` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
           `subscriptioncode` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
-          `deliveryaddress` text COLLATE utf8_unicode_ci DEFAULT NULL,
+          `metadata` text COLLATE utf8_unicode_ci DEFAULT NULL,
           `debt` DECIMAL(13, 2) NULL,
           `payments` longtext COLLATE utf8_unicode_ci,
           `whensubscribed` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -599,9 +607,7 @@ function paystack_recurrent_billing_install () {
           PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-        ALTER TABLE `".PAYSTACK_RECURRENT_BILLING_TABLE."` CHANGE `deliveryaddress` `metadata` text COLLATE utf8_unicode_ci DEFAULT NULL;
-
-        CREATE TABLE `".PAYSTACK_RECURRENT_BILLING_CODES_TABLE."` (
+        CREATE TABLE `".paystack_recurrent_billing_codes_table()."` (
           `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
           `subscriptioncode` varchar(100) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
           `customercode` varchar(100) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
@@ -615,7 +621,7 @@ function paystack_recurrent_billing_install () {
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
         dbDelta( $sql );
 
-        update_option( "paystack_recurrent_billing_db_version", PAYSTACK_RECURRENT_BILLING_DB_VERSION );
+        update_option( "paystack_recurrent_billing_db_version", paystack_recurrent_billing_db_version() );
     }
 }
 
@@ -672,7 +678,7 @@ Additional Information: {$subscriber->metadata}
 Thanks!
         " );
     $wpdb->insert(
-        PAYSTACK_RECURRENT_BILLING_TABLE,
+        paystack_recurrent_billing_table(),
         array(
             'firstname' => $subscriber->firstname,
             'lastname' => $subscriber->lastname,
@@ -740,7 +746,7 @@ Thanks!" );
 
     // update subscriber info
     $wpdb->update(
-        PAYSTACK_RECURRENT_BILLING_TABLE,
+        paystack_recurrent_billing_table(),
         array(
             'payments' => $subscriber->payments,
             'debt' => $subscriber->debt
@@ -759,14 +765,14 @@ function paystack_recurrent_billing_get_subscription_code($plancode, $customerco
     global $wpdb;
     $subscriptioncode = $wpdb->get_var(
         $wpdb->prepare(
-            'SELECT `subscriptioncode` FROM `'.PAYSTACK_RECURRENT_BILLING_CODES_TABLE.'`
+            'SELECT `subscriptioncode` FROM `'.paystack_recurrent_billing_codes_table().'`
             WHERE `plancode` = %s AND `customercode` = %s AND `used`=0',
             $plancode, $customercode
         )
     );
     // update subscriber info
     $wpdb->update(
-        PAYSTACK_RECURRENT_BILLING_CODES_TABLE,
+        paystack_recurrent_billing_codes_table(),
         array(
             'used' => 1
         ),
@@ -785,7 +791,7 @@ function paystack_recurrent_billing_get_subscriber_by_code ($evt){
     global $wpdb;
     $subscriber = $wpdb->get_row(
         $wpdb->prepare(
-            'SELECT * FROM `'.PAYSTACK_RECURRENT_BILLING_TABLE.'` WHERE `subscriptioncode` = %s',
+            'SELECT * FROM `'.paystack_recurrent_billing_table().'` WHERE `subscriptioncode` = %s',
             $subcode
         ),
         OBJECT
@@ -813,7 +819,7 @@ function paystack_recurrent_billing_get_all_subscribers (){
     // get subscribers
     global $wpdb;
     return $wpdb->get_results(
-            'SELECT * FROM `'.PAYSTACK_RECURRENT_BILLING_TABLE.'` ORDER BY id DESC'
+            'SELECT * FROM `'.paystack_recurrent_billing_table().'` ORDER BY id DESC'
     );
 }
 
@@ -822,7 +828,7 @@ function paystack_recurrent_billing_get_subscriber_by_email_no_code ($evt, $noti
     global $wpdb;
     $subscriber = $wpdb->get_row(
         $wpdb->prepare(
-            'SELECT * FROM `'.PAYSTACK_RECURRENT_BILLING_TABLE.'` WHERE `email` = %s AND  and `subscription_code` IS NULL',
+            'SELECT * FROM `'.paystack_recurrent_billing_table().'` WHERE `email` = %s AND  and `subscription_code` IS NULL',
             $evt->data->customer->email
         ),
         OBJECT
@@ -869,7 +875,7 @@ Thanks!" );
 function paystack_recurrent_billing_update_subscription_code ($evt){
     global $wpdb;
     $wpdb->insert(
-        PAYSTACK_RECURRENT_BILLING_CODES_TABLE,
+        paystack_recurrent_billing_codes_table(),
         array(
             'plancode' => $evt->data->plan->plan_code,
             'customercode' => $evt->data->customer->customer_code,
@@ -881,7 +887,7 @@ function paystack_recurrent_billing_update_subscription_code ($evt){
     if($subscriber){
         // update subscriber info
         $wpdb->update(
-            PAYSTACK_RECURRENT_BILLING_TABLE,
+            paystack_recurrent_billing_table(),
             array(
                 'subscriptioncode' => $evt->subscription_code
             ),
@@ -896,7 +902,7 @@ function paystack_recurrent_billing_update_subscription_code ($evt){
 }
 
 function paystack_recurrent_billing_update_db_check() {
-    if ( get_site_option( 'paystack_recurrent_billing_db_version' ) != PAYSTACK_RECURRENT_BILLING_DB_VERSION ) {
+    if ( get_site_option( 'paystack_recurrent_billing_db_version' ) != paystack_recurrent_billing_db_version() ) {
         paystack_recurrent_billing_install();
     }
 }
