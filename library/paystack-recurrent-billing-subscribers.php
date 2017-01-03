@@ -238,7 +238,7 @@ class Paystack_Recurrent_Billing_Subscribers extends WP_List_Table {
 	function process_bulk_action() {
 		// security check!
 		if ( isset( $_POST['_wpnonce'] ) && ! empty( $_POST['_wpnonce'] ) ) {
-			$nonce  = filter_input( INPUT_POST, '_wpnonce', FILTER_SANITIZE_STRING );
+			$nonce	= filter_input( INPUT_POST, '_wpnonce', FILTER_SANITIZE_STRING );
 			$action = 'bulk-' . $this->_args['plural'];
 
 			if ( ! wp_verify_nonce( $nonce, $action ) ){
